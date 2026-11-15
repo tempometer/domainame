@@ -157,6 +157,41 @@ def is_system_label(label: str) -> bool:
     return (label or "").lower() in SYSTEM_LABELS
 
 
+def validate_fqdn(name: str) -> List[str]:
+    """Syntax-only RFC 1123 validation of a full domain name; [] = valid.
+
+    Each dot-separated label must be 1-63 bytes of lowercase [a-z0-9-]
+    and must not start or end with a hyphen. Exactly one trailing dot is
+    accepted and excluded from the total-length count.
+
+    Deliberately policy-free: punycode, system-label and embarrassing
+    substring rules constrain GENERATED names, not arbitrary zones a user
+    already owns (``xn--`` is legal IDN; ``sussex.ac.uk`` is a real zone).
+    Per-label error messages quote the offending label so the user can
+    see which part is wrong.
+    """
+    errors: List[str] = []
+    if not name:
+        return ["fqdn is empty"]
+    stripped = name[:-1] if name.endswith(".") else name
+    for label in stripped.split("."):
+        if not label:
+            errors.append(f"label {label!r} is empty")
+        elif len(label) > MAX_LABEL_LEN:
+            errors.append(f"label {label!r} longer than {MAX_LABEL_LEN} bytes")
+        elif not LABEL_RE.match(label):
+            errors.append(
+                f"label {label!r} must be lowercase [a-z0-9-], starting "
+                "and ending with a letter or digit"
+            )
+    if len(stripped) > MAX_FQDN_LEN:
+        errors.append(
+            f"fqdn longer than {MAX_FQDN_LEN} bytes (excluding trailing "
+            f"dot): {len(stripped)}"
+        )
+    return errors
+
+
 def generate_code(length: int = 4, rng: Optional[random.Random] = None) -> str:
     """Short uniqueness code from a word-safe alphabet (default ~923k)."""
     rng = rng or random
@@ -284,11 +319,19 @@ def generate_fqdn(
 
     ``env`` becomes its own label to the left of the name (canonical
     routing position). Production is the absence of an env label.
+    Non-empty ``env`` and ``zone`` must be syntactically valid domain
+    names (``validate_fqdn``); the generated/supplied ``label`` keeps its
+    own policy check.
     """
     if label is None:
         label = generate_domain_label(rng=rng, unique=unique, style=style)
     elif validate_domain_label(label):
         raise ValueError(f"invalid label {label!r}: {validate_domain_label(label)}")
+    for role, value in (("env", env), ("zone", zone)):
+        if value:
+            errors = validate_fqdn(value)
+            if errors:
+                raise ValueError(f"invalid {role} {value!r}: {errors}")
     parts = [p for p in (env, label, zone) if p]
     fqdn = ".".join(parts)
     if len(fqdn) > MAX_FQDN_LEN:

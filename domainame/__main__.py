@@ -5,6 +5,7 @@ Examples:
     python -m domainame -n 5 --style blend    # daringeron, quiequasar, ...
     python -m domainame --env dev --zone lab.internal
     python -m domainame --validate keen-falcon
+    python -m domainame --validate-fqdn dev.keen-falcon.example.com
     python -m domainame --sanitize "Keen Falcon_2"
 """
 
@@ -21,6 +22,7 @@ from .generator import (
     generate_n,
     sanitize_domain_label,
     validate_domain_label,
+    validate_fqdn,
 )
 
 
@@ -41,6 +43,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--seed", type=int, help="random seed for reproducible runs")
     parser.add_argument("--validate", metavar="LABEL",
                         help="validate an existing label and exit")
+    parser.add_argument("--validate-fqdn", metavar="NAME",
+                        help="validate a full domain name (RFC 1123 syntax) and exit")
     parser.add_argument("--sanitize", metavar="NAME",
                         help="coerce arbitrary text into a DNS-safe label and exit")
     args = parser.parse_args(argv)
@@ -54,9 +58,26 @@ def main(argv: list[str] | None = None) -> int:
         print("OK")
         return 0
 
+    if args.validate_fqdn is not None:
+        errors = validate_fqdn(args.validate_fqdn)
+        if errors:
+            for err in errors:
+                print(f"INVALID: {err}", file=sys.stderr)
+            return 1
+        print("OK")
+        return 0
+
     if args.sanitize is not None:
         print(sanitize_domain_label(args.sanitize))
         return 0
+
+    if args.zone:
+        for role, value in (("env", args.env), ("zone", args.zone)):
+            if not value:
+                continue
+            errors = validate_fqdn(value)
+            if errors:
+                parser.error(f"invalid --{role} {value!r}: {'; '.join(errors)}")
 
     rng = random.Random(args.seed) if args.seed is not None else None
     if args.zone:

@@ -97,7 +97,7 @@ DNS-мітці байдуже, як слово виглядає: `abc`, `nasa`, 
 ## API
 
 ```python
-from domainame import generate_domain_label, generate_fqdn, blend_pair, validate_domain_label
+from domainame import generate_domain_label, generate_fqdn, blend_pair, validate_domain_label, validate_fqdn
 
 generate_domain_label()                              # 'keen-falcon'
 generate_domain_label(style="fuse")                  # 'cosmicomet'
@@ -105,6 +105,7 @@ generate_domain_label(style="blend")                 # 'daringeron'
 blend_pair("quiet", "quasar")                        # 'quietuasar' | 'quiequasar'
 generate_fqdn(zone="example.com", env="dev")         # 'dev.brisk-aurora.example.com'
 validate_domain_label("keen_falcon")                 # ['label must be lowercase [a-z0-9-]...']
+validate_fqdn("dev.keen-falcon.example.com")         # [] — синтаксис RFC 1123, без політик генератора
 ```
 
 ## CLI
@@ -114,6 +115,7 @@ python -m domainame                          # одне ім'я: daring-heron
 python -m domainame -n 5 --style blend       # daringeron, quiequasar, ...
 python -m domainame --style fuse --env dev --zone lab.internal
 python -m domainame --validate keen-falcon   # OK / INVALID
+python -m domainame --validate-fqdn dev.keen-falcon.example.com   # OK / INVALID для повного FQDN
 python -m domainame --sanitize "Keen Falcon_2"   # keen-falcon-2
 ```
 
