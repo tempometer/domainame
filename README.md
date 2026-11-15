@@ -5,7 +5,7 @@ Docker gives its containers, but following RFC 1123 rules for domain labels.
 
 **[Українська версія](README.ua.md)**
 
-## The naming scheme
+## The canonical scheme
 
 ```
 [env.]<adjective>-<noun>[-<code>][.zone]
@@ -18,14 +18,14 @@ styles (--style):
 FQDN examples:
   daring-heron.example.com
   dev.quiet-quasar.lab.internal
-  crisp-heron-7k3m.example.com      <- code is an option for CI sandboxes only
+  crisp-heron-7k3m.example.com      ← code is an option for CI sandboxes only
 ```
 
 - **adjective-noun** — the same pair Docker uses (`clever_liskov`), but joined
   with a **hyphen**: underscores are illegal in hostnames (RFC 1123); `_` lives
-  only in service records (`_dmarc`, `_acme-challenge`).
+  only in special-purpose records (`_dmarc`, `_acme-challenge`).
 - **No codes by default.** The word pools give 96×96 = **9,216 base pairs**;
-  with fuse/blend variants — tens of thousands of labels. A code suffix stays
+  with fuse/blend variants bringing that to tens of thousands of labels. A code suffix stays
   an option (`--unique`) for CI sandboxes where collisions are unacceptable;
   in human-facing URLs it looks "suspicious" and is not needed.
 - **env is its own label to the left** (`dev.`, `staging.`), not an inner
@@ -36,7 +36,7 @@ FQDN examples:
 
 Two single-label modes:
 
-- **fuse** — honest gluing that absorbs any suffix/prefix overlap:
+- **fuse** — straightforward gluing that absorbs any suffix/prefix overlap:
   `cosmic+comet → cosmicomet`, `eager+raven → eageraven`; with no overlap it
   is plain concatenation, `daring+heron → daringheron`.
 - **blend** — a cropped portmanteau, the way a person would shorten the
@@ -44,16 +44,16 @@ Two single-label modes:
   - drop the noun's head: `daring+heron → daringeron`, `quiet+quasar → quietuasar`
   - drop the adjective's tail: `quiet+quasar → quiequasar`
 
-Phonotactic rules for the blend seam (so it reads as one word):
+Phonotactic rules for the blend (so the seam is pronounceable):
 
 1. The cropped edge must open or close with a vowel: `heron → eron` is fine,
    `spruce → pruce` is not (consonant cluster).
 2. The seam alternates vowel/consonant (CV or VC): `daringeron` (g|e) is fine,
    `snowyuartz` (y|u — two vowels) is rejected.
 3. Length ≤ 13, no three identical letters in a row, no embarrassing
-   substrings (gluing without a hyphen reopens the classic `pen_island`
+   substrings (gluing without a hyphen reopens the `pen_island`
    problem — that is why the full label is checked as a whole).
-4. If no clean fusion exists, fall back honestly to the hyphen
+4. If no clean fusion exists, fall back to the hyphen
    (`swift+spruce → swift-spruce`).
 
 ## How a domain differs from a container
@@ -64,7 +64,7 @@ Phonotactic rules for the blend seam (so it reads as one word):
 | Uniqueness | randomness | large pair pool + blends (code is an option) |
 | Limits | — | label ≤ 63 bytes, FQDN ≤ 253 bytes |
 | env | part of the name | separate label to the left |
-| Filters | — | `xn--`, system labels (`www`, `api`…), embarrassing, blend seam |
+| Filters | — | `xn--`, system labels (`www`, `api`…), embarrassing substrings, blend seam |
 | Lifetime | hours | weeks to years |
 
 The hyphen joiner in hyphen mode is **safer than concatenation**: the classic
@@ -72,14 +72,14 @@ The hyphen joiner in hyphen mode is **safer than concatenation**: the classic
 together. The `EMBARRASSING_SUBSTRINGS` filter additionally checks the full
 label.
 
-## Acronyms — yes, you can
+## Acronyms are fine
 
 DNS labels do not care what a word looks like: `abc`, `nasa`, `s3` are all
 legal, as long as they are `[a-z0-9-]` and at most 63 bytes. Practical rules:
 
 1. **An acronym is for durable entities** (a service, a team); adjective-noun
    is for random/personal ones (a dev label, a preview, a pet project).
-   Do not mix the two in one purpose.
+   Do not mix the two for the same purpose.
 2. An acronym is ≤ 5–6 letters and pronounceable as a word (`sonar` yes,
    `xq7z2k` no).
 3. A dot is more structural than a hyphen: `api.acme.example.com`, not
@@ -91,7 +91,7 @@ legal, as long as they are `[a-z0-9-]` and at most 63 bytes. Practical rules:
 - [docker/docker namesgenerator](https://pkg.go.dev/github.com/docker/docker/pkg/namesgenerator) —
   the canonical Go package from Docker; officially "frozen", words are never
   added.
-- [haikunator](https://github.com/usmanbashir/haikunater) — Heroku-style
+- [haikunator](https://github.com/usmanbashir/haikunator) — Heroku-style
   `wispy-frost-8542`, with dozens of ports across languages.
 - [beasteers/randomname](https://github.com/beasteers/randomname) (Python),
   [unique-names-generator](https://www.npmjs.com/package/unique-names-generator) (npm) —
