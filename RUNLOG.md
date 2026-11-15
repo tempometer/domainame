@@ -11,6 +11,8 @@ the merge gate to the review verdict for these runs.
 | Run | Issue | Branch | PR | Tests | Review | Outcome |
 |-----|-------|--------|-----|-------|--------|---------|
 | 1 | [#1](https://github.com/tempometer/domainame/issues/1) validate_fqdn + env/zone guard | `issue-1-validate-fqdn` | [#2](https://github.com/tempometer/domainame/pull/2) | 58/58 (local) | R1 GO-with-changes (2 RC) → fixes → R2 **GO** | squash-merged `d1c5c32` |
+| 2 | [#5](https://github.com/tempometer/domainame/issues/5) English README (owner requirement) | `issue-5-english-readme` | [#8](https://github.com/tempometer/domainame/pull/8) | 58/58 (docs-only) | R1 GO-with-changes (1 RC) → fixes → R2 **GO** | squash-merged `fe5f0db` |
+| 3 | [#3](https://github.com/tempometer/domainame/issues/3) fullmatch in validate_domain_label | `issue-3-label-fullmatch` | [#10](https://github.com/tempometer/domainame/pull/10) | 62/62 (local) | **GO**, 0 RC; 3 test OPC applied pre-merge | squash-merged `bfef325` |
 
 ## Run 1 — 2026-11-15, issue #1 (validate_fqdn + env/zone guard)
 
@@ -48,3 +50,40 @@ the merge gate to the review verdict for these runs.
   `--env dev.`); re-run of the suite on `main` after merge.
 - **Merge**: squash-merged after the round-2 GO — merge gate delegated by
   the owner for this run ("merge if the review is OK").
+
+## Run 2 — 2026-11-15, issue #5 (English README — owner requirement)
+
+- **Request**: owner directive — the professional language of the repo is
+  English; Ukrainian README preserved as `README.ua.md`.
+- **Review round 1 (GO-with-changes)**: RC-1 — the EN href said
+  `haikunater` (typo; the UA original had the correct `haikunator`).
+  12 non-blocking fixes applied (de-calc English, terminology consistency,
+  strict parity restored, `←` arrow). Reviewer confirmed full parity:
+  10/10 sections, identical examples/numbers/identifiers, UA file
+  byte-identical apart from the cross-link.
+- **Review round 2 (GO)** + 2 discretionary polish notes applied pre-merge.
+- Inherited UA typos split into
+  [#9](https://github.com/tempometer/domainame/issues/9) (the run's
+  criterion demanded "UA unchanged").
+- **Merge**: `fe5f0db` (squash), issue #5 auto-closed.
+
+## Run 3 — 2026-11-15, issue #3 (inherited `$`-anchor defect)
+
+- **Request**: `validate_domain_label` still used `.match` against a `^…$`
+  pattern, so a trailing `\n` passed as valid (the sibling of run 1's RC-1).
+- **Fix**: `LABEL_RE.fullmatch`; confirmed the last bare-`.match` validation
+  site in the repo.
+- **Review (GO, 0 required changes)**: all three callers covered; generated
+  labels can never contain `\n`; sanitize proven `\n`-safe. 3 test
+  suggestions applied pre-merge: positive 63-byte boundary, `"a"*62 + "\n"`
+  case, and the real-harm path `generate_fqdn(label="keen-falcon\n") →
+  ValueError`. Suite 60 → 62.
+- **Merge**: `bfef325` (squash), issue #3 auto-closed.
+
+## Backlog (next up)
+
+[#6](https://github.com/tempometer/domainame/issues/6) CI + badge →
+[#4](https://github.com/tempometer/domainame/issues/4) CLI polish →
+[#7](https://github.com/tempometer/domainame/issues/7) pyproject packaging →
+[#9](https://github.com/tempometer/domainame/issues/9) UA README typos.
+
