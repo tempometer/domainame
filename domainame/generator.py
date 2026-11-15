@@ -134,7 +134,7 @@ def validate_domain_label(label: str) -> List[str]:
         return ["label is empty"]
     if len(label) > MAX_LABEL_LEN:
         errors.append(f"label longer than {MAX_LABEL_LEN} bytes")
-    if not LABEL_RE.match(label):
+    if not LABEL_RE.fullmatch(label):
         errors.append(
             "label must be lowercase [a-z0-9-], starting and ending "
             "with a letter or digit"

@@ -49,6 +49,11 @@ class TestValidateLabel(unittest.TestCase):
     def test_rejects_empty(self):
         self.assertTrue(validate_domain_label(""))
 
+    def test_rejects_trailing_or_inner_newline(self):
+        # `$` alone matches before a trailing \n; only fullmatch catches it.
+        for label in ("keen-falcon\n", "keen\nfalcon", "keen-falcon\n\n"):
+            self.assertTrue(validate_domain_label(label), repr(label))
+
 
 class TestValidateFqdn(unittest.TestCase):
     def test_valid_fqdns(self):
@@ -118,6 +123,9 @@ class TestSanitize(unittest.TestCase):
 
     def test_empty_falls_back(self):
         self.assertEqual(sanitize_domain_label("!!!"), "site")
+
+    def test_newline_becomes_hyphen(self):
+        self.assertEqual(sanitize_domain_label("keen\nfalcon"), "keen-falcon")
 
 
 class TestGenerate(unittest.TestCase):
