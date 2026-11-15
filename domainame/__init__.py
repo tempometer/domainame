@@ -13,6 +13,7 @@ from .generator import (
     is_system_label,
     sanitize_domain_label,
     validate_domain_label,
+    validate_fqdn,
 )
 from .words import ADJECTIVES, NOUNS
 
@@ -31,4 +32,5 @@ __all__ = [
     "is_system_label",
     "sanitize_domain_label",
     "validate_domain_label",
+    "validate_fqdn",
 ]
