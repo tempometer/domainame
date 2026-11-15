@@ -24,7 +24,7 @@ FQDN examples:
 - **adjective-noun** — the same pair Docker uses (`clever_liskov`), but joined
   with a **hyphen**: underscores are illegal in hostnames (RFC 1123); `_` lives
   only in special-purpose records (`_dmarc`, `_acme-challenge`).
-- **No codes by default.** The word pools give 96×96 = **9,216 base pairs**;
+- **No codes by default.** The word pools give 96×96 = **9,216 base pairs**,
   with fuse/blend variants bringing that to tens of thousands of labels. A code suffix stays
   an option (`--unique`) for CI sandboxes where collisions are unacceptable;
   in human-facing URLs it looks "suspicious" and is not needed.
@@ -100,7 +100,7 @@ legal, as long as they are `[a-z0-9-]` and at most 63 bytes. Practical rules:
   (Rust, graph search), [qm3jp/portmanteau-generator](https://github.com/qm3jp/portmanteau-generator) (Python).
 
 None of them apply **domain** rules: hyphen instead of `_`, the `xn--` ban,
-system labels, the embarrassing filter, seam phonotactics, the env label on
+system labels, the embarrassing-substring filter, seam phonotactics, the env label on
 the left. Hence our own — a thin layer over the same idea.
 
 ## API
