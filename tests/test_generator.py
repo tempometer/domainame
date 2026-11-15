@@ -50,9 +50,16 @@ class TestValidateLabel(unittest.TestCase):
         self.assertTrue(validate_domain_label(""))
 
     def test_rejects_trailing_or_inner_newline(self):
-        # `$` alone matches before a trailing \n; only fullmatch catches it.
+        # A bare `.match` with `$` still passes "keen-falcon\n" (the anchor
+        # matches before one final newline); inner newlines were always
+        # rejected by the char class. fullmatch closes the trailing case.
         for label in ("keen-falcon\n", "keen\nfalcon", "keen-falcon\n\n"):
             self.assertTrue(validate_domain_label(label), repr(label))
+
+    def test_accepts_63_bytes(self):
+        self.assertEqual(validate_domain_label("a" * 63), [])
+        # 62 chars + \n passes the length check; only the regex rejects it.
+        self.assertTrue(validate_domain_label("a" * 62 + "\n"))
 
 
 class TestValidateFqdn(unittest.TestCase):
@@ -219,6 +226,11 @@ class TestFqdn(unittest.TestCase):
     def test_invalid_label_raises(self):
         with self.assertRaises(ValueError):
             generate_fqdn(zone="example.com", label="keen_falcon")
+
+    def test_label_with_newline_raises(self):
+        # The path where the inherited defect did real harm: \n inside an FQDN.
+        with self.assertRaisesRegex(ValueError, "invalid label"):
+            generate_fqdn(zone="example.com", label="keen-falcon\n")
 
     def test_invalid_zone_raises(self):
         with self.assertRaisesRegex(ValueError, "invalid zone"):
