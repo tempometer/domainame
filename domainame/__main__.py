@@ -75,18 +75,26 @@ def main(argv: list[str] | None = None) -> int:
         for role, value in (("env", args.env), ("zone", args.zone)):
             if not value:
                 continue
+            if role == "env" and value.endswith("."):
+                parser.error(
+                    f"invalid --{role} {value!r}: a trailing dot is only "
+                    "legal at the end of a full domain name"
+                )
             errors = validate_fqdn(value)
             if errors:
                 parser.error(f"invalid --{role} {value!r}: {'; '.join(errors)}")
 
     rng = random.Random(args.seed) if args.seed is not None else None
-    if args.zone:
-        names = [generate_fqdn(zone=args.zone, env=args.env, rng=rng,
-                               unique=args.unique, style=args.style)
-                 for _ in range(args.count)]
-    else:
-        names = generate_n(args.count, rng=rng, unique=args.unique,
-                           style=args.style)
+    try:
+        if args.zone:
+            names = [generate_fqdn(zone=args.zone, env=args.env, rng=rng,
+                                   unique=args.unique, style=args.style)
+                     for _ in range(args.count)]
+        else:
+            names = generate_n(args.count, rng=rng, unique=args.unique,
+                               style=args.style)
+    except ValueError as exc:
+        parser.error(str(exc))
     for name in names:
         print(name)
     return 0

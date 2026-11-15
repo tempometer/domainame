@@ -92,6 +92,22 @@ class TestValidateFqdn(unittest.TestCase):
         for name in ("xn--80ak6aa92e.com", "sussex.ac.uk", "www.example.com"):
             self.assertEqual(validate_fqdn(name), [], name)
 
+    def test_rejects_trailing_newline(self):
+        for name in ("example.com\n", "a\n.com"):
+            self.assertNotEqual(validate_fqdn(name), [], repr(name))
+
+    def test_empty_label_message_is_exact(self):
+        self.assertEqual(validate_fqdn("a..b"), ["label '' is empty"])
+
+    def test_dot_only_and_double_dot(self):
+        self.assertEqual(validate_fqdn("."), ["label '' is empty"])
+        self.assertEqual(validate_fqdn("a.."), ["label '' is empty"])
+        self.assertEqual(len(validate_fqdn("..")), 2)
+
+    def test_trailing_dot_does_not_rescue_over_length(self):
+        fqdn_254 = ".".join(["a" * 63, "a" * 63, "a" * 63, "a" * 62])
+        self.assertNotEqual(validate_fqdn(fqdn_254 + "."), [])
+
 
 class TestSanitize(unittest.TestCase):
     def test_spaces_and_underscores_become_hyphens(self):
@@ -197,13 +213,27 @@ class TestFqdn(unittest.TestCase):
             generate_fqdn(zone="example.com", label="keen_falcon")
 
     def test_invalid_zone_raises(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(ValueError, "invalid zone"):
             generate_fqdn(zone="Bad_Zone..com", label="keen-falcon")
 
     def test_invalid_env_raises(self):
         for env in ("-x", "Dev"):
-            with self.assertRaises(ValueError):
+            with self.assertRaisesRegex(ValueError, "invalid env"):
                 generate_fqdn(zone="example.com", label="keen-falcon", env=env)
+
+    def test_env_trailing_dot_raises(self):
+        with self.assertRaisesRegex(ValueError, "invalid env"):
+            generate_fqdn(zone="example.com", label="keen-falcon", env="dev.")
+
+    def test_trailing_dot_zone_excluded_from_total(self):
+        zone = ".".join(["b" * 63, "b" * 63, "b" * 61, ""])
+        fqdn = generate_fqdn(zone=zone, label="a" * 63)
+        self.assertEqual(len(fqdn), 254)
+        self.assertTrue(fqdn.endswith("."))
+        self.assertEqual(validate_fqdn(fqdn), [])
+        zone_over = ".".join(["b" * 63, "b" * 63, "b" * 62, ""])
+        with self.assertRaisesRegex(ValueError, "fqdn exceeds"):
+            generate_fqdn(zone=zone_over, label="a" * 63)
 
     def test_multi_label_env_and_trailing_dot_zone(self):
         fqdn = generate_fqdn(zone="example.com.", label="keen-falcon", env="dev.eu")

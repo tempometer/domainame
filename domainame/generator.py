@@ -179,7 +179,7 @@ def validate_fqdn(name: str) -> List[str]:
             errors.append(f"label {label!r} is empty")
         elif len(label) > MAX_LABEL_LEN:
             errors.append(f"label {label!r} longer than {MAX_LABEL_LEN} bytes")
-        elif not LABEL_RE.match(label):
+        elif not LABEL_RE.fullmatch(label):
             errors.append(
                 f"label {label!r} must be lowercase [a-z0-9-], starting "
                 "and ending with a letter or digit"
@@ -323,18 +323,24 @@ def generate_fqdn(
     names (``validate_fqdn``); the generated/supplied ``label`` keeps its
     own policy check.
     """
+    for role, value in (("env", env), ("zone", zone)):
+        if not value:
+            continue
+        if role == "env" and value.endswith("."):
+            raise ValueError(
+                f"invalid {role} {value!r}: a trailing dot is only legal at "
+                "the end of a full domain name"
+            )
+        errors = validate_fqdn(value)
+        if errors:
+            raise ValueError(f"invalid {role} {value!r}: {errors}")
     if label is None:
         label = generate_domain_label(rng=rng, unique=unique, style=style)
     elif validate_domain_label(label):
         raise ValueError(f"invalid label {label!r}: {validate_domain_label(label)}")
-    for role, value in (("env", env), ("zone", zone)):
-        if value:
-            errors = validate_fqdn(value)
-            if errors:
-                raise ValueError(f"invalid {role} {value!r}: {errors}")
     parts = [p for p in (env, label, zone) if p]
     fqdn = ".".join(parts)
-    if len(fqdn) > MAX_FQDN_LEN:
+    if len(fqdn.rstrip(".")) > MAX_FQDN_LEN:
         raise ValueError(f"fqdn exceeds {MAX_FQDN_LEN} bytes: {fqdn}")
     return fqdn
 

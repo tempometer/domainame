@@ -33,7 +33,16 @@ class TestValidateFqdnFlag(unittest.TestCase):
         code, out, err = run_cli(["--validate-fqdn", "bad_zone..com"])
         self.assertEqual(code, 1)
         self.assertEqual(out, "")
-        self.assertIn("INVALID:", err)
+        self.assertEqual(
+            err.splitlines(),
+            [f"INVALID: {e}" for e in validate_fqdn("bad_zone..com")],
+        )
+        self.assertEqual(len(err.splitlines()), 2)
+
+    def test_validate_fqdn_empty(self):
+        code, out, err = run_cli(["--validate-fqdn", ""])
+        self.assertEqual((code, out), (1, ""))
+        self.assertEqual(err, "INVALID: fqdn is empty\n")
 
 
 class TestValidateFlagUnchanged(unittest.TestCase):
@@ -48,24 +57,31 @@ class TestValidateFlagUnchanged(unittest.TestCase):
 
 
 class TestInvalidZoneEnv(unittest.TestCase):
-    def test_invalid_zone_exits_2(self):
+    def assert_parser_error(self, argv, needle):
         out, err = io.StringIO(), io.StringIO()
         with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
             with self.assertRaises(SystemExit) as cm:
-                main(["--zone", "Bad_Zone..com"])
+                main(argv)
         self.assertEqual(cm.exception.code, 2)
         self.assertEqual(out.getvalue(), "")
-        self.assertIn("error:", err.getvalue())
+        self.assertIn("domainame: error:", err.getvalue())
+        self.assertIn(needle, err.getvalue())
+        self.assertNotIn("Traceback", err.getvalue())
+        return err.getvalue()
+
+    def test_invalid_zone_exits_2(self):
+        self.assert_parser_error(["--zone", "Bad_Zone..com"], "--zone")
 
     def test_invalid_env_exits_2(self):
         # Equals form "--env=-x" passes "-x" through argparse untouched.
         for argv in (["--zone", "example.com", "--env", "Dev"],
                      ["--zone", "example.com", "--env=-x"]):
-            with contextlib.redirect_stdout(io.StringIO()), \
-                    contextlib.redirect_stderr(io.StringIO()):
-                with self.assertRaises(SystemExit) as cm:
-                    main(argv)
-            self.assertEqual(cm.exception.code, 2)
+            self.assert_parser_error(argv, "--env")
+
+    def test_env_trailing_dot_exits_2(self):
+        self.assert_parser_error(
+            ["--zone", "example.com", "--env", "dev."], "invalid --env"
+        )
 
 
 class TestGeneration(unittest.TestCase):
@@ -77,6 +93,16 @@ class TestGeneration(unittest.TestCase):
         line = first[1].strip()
         self.assertTrue(line.startswith("dev."))
         self.assertEqual(validate_fqdn(line), [])
+
+    def test_seed_7_golden_line(self):
+        _, out, _ = run_cli(["--seed", "7", "--zone", "example.com", "--env", "dev"])
+        self.assertEqual(out, "dev.heroic-crane.example.com\n")
+
+    def test_env_without_zone_ignored(self):
+        code, out, err = run_cli(["--seed", "7", "--env", "Bad"])
+        self.assertEqual(code, 0)
+        self.assertEqual(err, "")
+        self.assertNotIn("Bad", out)
 
 
 if __name__ == "__main__":
